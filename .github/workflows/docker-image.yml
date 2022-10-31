@@ -1,0 +1,35 @@
+name: Container Workflow
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+env:
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_NAME }}.azurecr.io
+  IMAGE_NAME: ${{ secrets.ACR_NAME }}.azurecr.io/webapp:${{ github.sha }}
+
+jobs:
+
+  build-deploy-image:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Checkout Github Action'
+      uses: actions/checkout@v3
+    
+    - name: 'Log into ACR'
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.ACR_LOGIN_SERVER }}
+        username: ${{ secrets.SERVICE_PRINCIPAL_ID }}
+        password: ${{ secrets.SERVICE_PRINCIPAL_PASSWORD }}
+    
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag ${{ env.IMAGE_NAME }}
+    
+    - name: Push the Docker image
+      run: docker push ${{ env.IMAGE_NAME }}
